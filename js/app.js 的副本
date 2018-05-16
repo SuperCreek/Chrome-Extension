@@ -1,0 +1,166 @@
+angular.module('myApp.service',[])
+.provider('Weather',function(){
+	var apiKey = "";
+	this.setApiKey = function(key){
+		if(key){
+			this.apiKey = key
+		}
+	}
+	
+	this.getUrl = function(type,ext){
+		
+		return "http://api.wunderground.com/api/"+this.apiKey+'/'
+			   +type+'/q/'+ext+'.json'
+	}
+	
+	this.$get = function($q,$http){
+		var self = this;
+		return {
+			//服务对象
+			getWeatherForecast : function(city){
+				var d = $q.defer();
+				$http({
+					method:'GET',
+					url:self.getUrl("forecast",city),
+					cache:true
+				}).success(function(data){
+					//Wunderground API返回
+					//嵌套在forecast.simpleforecast属性内的forecasts对象
+					d.resolve(data.forecast.simpleforecast);
+				}).error(function(err){
+					d.reject(err);
+				})
+				return d.promise;
+			},
+			getCityDetails : function(query){
+				var d = $q.defer();
+				$http.get('http://autocomplete.wunderground.com/aq?query='+query).success(function(data){
+					d.resolve(data.RESULTS);
+				}).error(function(err){
+					d.reject(err)
+				})
+				return d.promise;
+			}
+		}
+	}
+})
+.factory('UserService',function(){
+	var defaults = {
+		location : "autoip"
+	}
+	var service = {
+		user:{},
+		save:function(){
+			//设置一个key为presenty的sessionStorage
+			sessionStorage.presenty = angular.toJson(service.user);
+		},
+		restore:function(){
+			//从sessionStorage中获取配置
+			service.user = angular.fromJson(sessionStorage.presenty)||defaults;
+			return service.user;
+		}
+	}
+	// 立即调用它，从session storage中回复配置
+	// 因此这里的用户数据是立即可用的
+	service.restore();
+	return service;
+})
+angular.module('myApp',['ngRoute','myApp.service'])
+.config(function($routeProvider){
+	$routeProvider
+	.when('/',{
+		templateUrl:'templates/home.html',
+		controller:'MainController'
+	})
+	.when('/settings',{
+		templateUrl:'templates/settings.html',
+		controller:'SettingController'	
+	})
+	.otherwise({
+		redirectTo:'/'
+	})
+})
+.config(function(WeatherProvider){
+	WeatherProvider.setApiKey('53f251450a49fe3b')
+})
+.controller('MainController',function($scope,$timeout,Weather,UserService){
+	//构建date对象
+	$scope.date = {}
+	//更新函数
+	var updateTime = function(){
+		$scope.date.raw = new Date()
+		$timeout(updateTime,1000)
+	}
+	//启动更新函数
+	updateTime()
+	
+	$scope.weather = {};
+	$scope.user = UserService.user
+	Weather.getWeatherForecast($scope.user.location)
+	.then(function(data){
+		$scope.weather.forcast = data;
+	})
+
+})
+.controller('SettingController',function($scope,UserService,Weather){
+	//这里是控制器定义
+	$scope.user = UserService.user;
+	$scope.save = function(){
+		UserService.save()
+	}
+	$scope.fetchCities = Weather.getCityDetails;
+})
+.directive('autoFill',function($timeout){
+	return {
+		restrict:'EA',
+		scope:{
+			autoFill:'&',
+			ngModel :'='
+		},
+		compile : function(tEle,tAttrs){
+			//编译函数
+			
+			var tplEle = angular.element('<div class="typeahead">'+
+			'<input type="text" autocomplete = "off" />'+
+			'<ul id="autolist" ng-show="reslist">'+
+			'<li ng-repeat="res in reslist">{{res.list}}</li>'+
+			'<ul>'+
+			'</div>')
+			
+			var input = tplEle.find('input');
+			input.attr('type',tAttrs.type);
+			input.attr('ng-model',tAttrs.ngModel);
+			tEle.replaceWith(tplEle)
+			return function(scope,ele,attrs,ctrl){
+				//链接函数
+				var minKeyCount = attrs.minKeyCount ||3,
+					timer,input = ele.find('input')
+				input.bind('keyup',function(e){
+					val= ele.val();
+					if(val.length <minKeyCount){
+						if(timer) $timeout.cancel(timer);
+						scope.reslist = null;
+						return;
+					}else{
+						if(timer) $timeout.cancel(timer);
+						timer = $timeout(function(){
+							scope.autoFill()(val).then(function(data){
+								if(data && data.length>0){
+									scope.reslist = data;
+									scope.ngModel = data[0].zmw
+								}
+							})
+						},300)
+					}
+				})
+				
+				//失去焦点时隐藏reslist
+				input.bind('blur',function(){
+					scope.reslist = null;
+					scope.$digest()
+				})
+			}
+		}
+	}
+})
+

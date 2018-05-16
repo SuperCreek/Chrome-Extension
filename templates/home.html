@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta charset="UTF-8">
+        <title></title>
+        <style>
+            
+        </style>
+	</head>
+	<body>
+		<div id="datetime">
+			<h1>{{date.raw | date:'hh mm ss'}}</h1>
+			<h2>{{date.raw | date:'EEEE,MMMM yyyy'}}</h2>
+		</div>
+		<div id="forecast">
+			<ul class="row list-unstyled">
+				<li ng-repeat="day in weather.forcast.forecastday" 
+					class="col-md-3">
+					<div ng-class="$index==0?'today':''">
+						<img  ng-src="{{ day.icon_url }}" alt="" />
+						<h3 class="row">
+                             {{ day.high.celsius }}
+                            <small class="col-sm-12" style="font-size:20px;display:block;">最高气温：{{ day.high.celsius }}℃</small>
+                            <small class="col-sm-12" style="font-size:20px;display:block;">最低气温：{{ day.low.celsius }}℃</small>
+                        </h3>
+						<h4 ng-if="$index == 0">Now</h4>
+						<h4 ng-if="$index != 0">{{ day.date.weekday }}({{ day.date.cnWeekday }})</h4>
+					</div>
+				</li>
+			</ul>
+		</div>
+	</body>
+</html>

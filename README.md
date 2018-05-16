@@ -1,5 +1,7 @@
 # Chrome-Extension
+
 This is Chrome   Extension program <br />
+<br />
 安装Chrome 扩展程序的方法:<br />
 <br />
 1.打开chrome浏览器，按住ALT+E打开更多选项，找到更多工具里面的扩展程序；<br />

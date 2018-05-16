@@ -23,7 +23,7 @@
                             <small class="col-sm-12" style="font-size:20px;display:block;">最高气温：{{ day.high.celsius }}℃</small>
                             <small class="col-sm-12" style="font-size:20px;display:block;">最低气温：{{ day.low.celsius }}℃</small>
                         </h3>
-						<h4 ng-if="$index == 0">Now</h4>
+						<h4 ng-if="$index == 0">Now({{ day.date.cnWeekday }})</h4>
 						<h4 ng-if="$index != 0">{{ day.date.weekday }}({{ day.date.cnWeekday }})</h4>
 					</div>
 				</li>
